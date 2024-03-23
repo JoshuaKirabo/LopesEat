@@ -28,11 +28,12 @@ app.post('/logout', loginController.handleLogout);
 
 app.post('/removeUserFromLoggedIn', loginController.removeUserFromLoggedIn);
 
-app.post('/submitAnswer', questionsController.submitAnswer);
+app.post('/submitAnswers', questionsController.submitAnswers);
 
 app.get('/getUserGender/:userId', questionsController.getUserGender);
 
 app.get('/getAllergies', questionsController.getAllergies);
+app.get('/checkIfUserHasCompletedQuestions', questionsController.checkIfUserHasCompletedQuestions);
 app.get('/getIntolerances', questionsController.getIntolerances);
 app.get('/getMedicalConditions', questionsController.getMedicalConditions);
 app.get('/getDietaryRestrictions', questionsController.getDietaryRestrictions);

@@ -78,19 +78,8 @@ const loginController = {
                     // Log the user in by adding/updating their entry in the logged_in_users table
                     await loginModel.loginUser(userId, student);
 
-                    // Fetch the last answered question for this user
-                    const lastAnswerResult = await pool.query('SELECT MAX(question_id) as last_question_id FROM answers_to_questions WHERE user_id = $1', [userId]);
-                    const lastAnsweredQuestionId = lastAnswerResult.rows[0].last_question_id;
-
-                    // Determine the next screen based on whether the user has answered all questions
-                    const totalQuestions = 25; // May change
-                    let nextScreen = "HomePage";
-                    if (lastAnsweredQuestionId === null || lastAnsweredQuestionId < totalQuestions) 
-                        {
-                            nextScreen = `Question${lastAnsweredQuestionId + 1}`;
-                        }
         
-                    return res.json({ success: true, message: "Success, Logged in", redirectTo: nextScreen, userId: userId });
+                    return res.json({ success: true, message: "Success, Logged in", userId: userId });
                 } 
             catch (error)
                 {
