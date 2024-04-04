@@ -7,35 +7,65 @@
 //
 
 const questionsModel = require('../Model/questionsModel'); 
+const cleanUpAnswers = require('./cleanUpAnswers');
 
+// Clean up the data so that we can insert into the DB
+const transformAnswers = (answers) => {
+    const transformed = {};
+    
+    answers.forEach(({ questionNumber, answer }) => {
+        const columnName = questionNumberToColumnName[questionNumber.toString()];
+        
+        // Handle array-type questions (e.g., dietary_restrictions)
+        if ([12, 13, 14, 15].includes(questionNumber)) {
+            if (Array.isArray(answer)) { // For simple arrays
+                transformed[columnName] = `{${answer.join(',')}}`;
+            } else if (typeof answer === 'object') { // For objects (key-value pairs)
+                const selectedOptions = Object.entries(answer)
+                    .filter(([_, isSelected]) => isSelected)
+                    .map(([key, _]) => key);
+                transformed[columnName] = `{${selectedOptions.join(',')}}`;
+            }
+        } else if ([29, 30].includes(questionNumber)) { // Special handling for height and weight, BMI
+            // Example: split height into feet and inches, or handle BMI calculation
+            // This is just an illustrative placeholder
+            transformed[columnName] = answer;
+        } else {
+            // Direct mapping for single-value answers
+            transformed[columnName] = answer;
+        }
+    });
+
+    return transformed;
+};
+
+
+
+  
 const questionsController = {
-    submitAnswer: async function(req, res)
-        {
-            const { userId, questionId, answer } = req.body;
+    submitAnswers: async function(req, res) {
+        const { userId, answers } = req.body;
 
-            try 
-                {
-                    await questionsModel.submitAnswer(userId, questionId, answer);
+        try {
+            console.log("Incoming answers:", answers);
 
-                    // Fetch the user's gender
-                    const gender = await questionsModel.getUserGender(userId);
-                    if(gender === undefined)
-                        {
-                            throw new Error('User gender not found');
-                        }0
+            // Note: Ensure cleanUpAnswers correctly prepares the data structure for your DB.
+            const transformedAnswers = await cleanUpAnswers(answers);
+            console.log("Transformed answers:", transformedAnswers);
 
-                    res.json({ success: true, message: 'Answer submitted successfully' });
-                } 
-            catch (error) 
-                {
-                    console.error('Error submitting answer:', error);
-                    res.status(500).json({ success: false, message: 'Failed to submit answer' });
-                }
-        },
+            // Now calling the model function with userId and transformedAnswers
+            await questionsModel.submitAnswers(userId, transformedAnswers);
+
+            res.json({ success: true, message: 'Answers submitted successfully' });
+        } catch (error) {
+            console.error('Error submitting answers:', error);
+            res.status(500).json({ success: false, message: error.message });
+        }
+    },
 
         getUserGender: async function(req, res) 
             {
-                const userId = req.params.userId; // Assuming you're passing userId as a route parameter
+                const userId = req.params.userId; 
             
                 try 
                     {
@@ -106,6 +136,24 @@ const questionsController = {
                     {
                         console.error('Error getting dietary restrictions:', error);
                         res.status(500).json({ success: false, message: 'Failed to get dietary restrictions' });
+                    }
+            },
+        
+        checkIfUserHasCompletedQuestions: async function(req, res) 
+            {
+                const userId = req.params.userId; 
+                console.log(userId);
+                
+                
+                try 
+                    {
+                        const hasCompleted = await questionsModel.checkIfUserHasCompletedQuestions(userId);
+                        res.json({ success: true, hasCompletedQuestions: hasCompleted });
+                    } 
+                catch (error) 
+                    {
+                        console.error('Error in checkIfUserHasCompletedQuestions:', error);
+                        res.status(500).json({ success: false, message: 'Failed to check if user has completed questions' });
                     }
             },
 };

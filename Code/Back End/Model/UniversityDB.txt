@@ -9,6 +9,5 @@ Laura,Martinez,laura.martinez@my.gcu.edu,password123,Female,2001-01-26,190
 Kevin,Garcia,kevin.garcia@my.gcu.edu,password123,Male,2000-04-07,175
 Sophia,Lee,sophia.lee@my.gcu.edu,password123,Female,2002-11-17,165
 Christen,Guvna,christen.g@my.gcu.edu,password123,Female,2001-05-05,2165
-Maria,Rhida,maria.rhida@my.gcu.edu,password123,Female,2001-08-10,1385
 Jenna,Hayra,jennah.hayra@my.gcu.edu,password123,Female,2001-04-13,2340
 
