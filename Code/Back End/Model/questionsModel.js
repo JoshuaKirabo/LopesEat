@@ -1,4 +1,4 @@
-const pool = require('./databaseManager.JS'); 
+const pool = require('./databaseManager'); 
 
 const questionsModel = {
     submitAnswers: async function(userId, transformedAnswers) {

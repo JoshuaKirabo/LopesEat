@@ -7,7 +7,7 @@
 
 const express = require('express');
 const loginController = require('./Controller/loginController');
-const questionsController = require('./Controller/questionsController.js');
+const questionsController = require('./Controller/questionsController');
 const homeScreenController = require('./Controller/homeScreenController');
 const profileScreenController = require('./Controller/profileScreenController');
 const chatController = require('./Controller/chatController');

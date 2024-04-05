@@ -1,6 +1,6 @@
 const loginModel = require('./../Model/loginModel');
 const UniversityCredsAPI = require('../Model/UniversityCredsAPI');
-const universityCredsAPI = new UniversityCredsAPI('universityDB.txt'); 
+const universityCredsAPI = new UniversityCredsAPI('UniversityDB.txt'); 
 const pool = require('../Model/databaseManager'); // Importing from the 'model' subdirectory
 
 const loginController = {

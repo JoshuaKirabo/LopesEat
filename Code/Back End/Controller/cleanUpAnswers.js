@@ -1,4 +1,4 @@
-const pool = require('../Model/databaseManager.js'); // Adjust the path as necessary
+const pool = require('../Model/databaseManager'); // Adjust the path as necessary
 
 // Because every question is related to a certain collumn
 const questionNumberToColumnName = 
