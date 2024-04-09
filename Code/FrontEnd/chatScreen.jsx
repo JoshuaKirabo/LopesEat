@@ -204,12 +204,11 @@ const styles = StyleSheet.create({
         marginTop: 16,
         marginRight: 8,
         marginLeft: 20,
-        marginBottom: 20,
-        marginBottom: 20,
         paddingHorizontal: 8, // Add some horizontal padding within the container
         backgroundColor: '#FFFFFF', // Make the background color same as input field
         borderRadius: 30, // Same border radius as the input field for rounded corners
-        borderBlockColor: 'black'
+        borderBlockColor: 'black',
+        marginBottom: Platform.select({ ios: 20, android: 0 })
     },
   input: 
     {
@@ -229,7 +228,6 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         paddingVertical: 10,
         paddingHorizontal: 16,
-        marginLeft: 0, // Ensure no margin betwe
     },
   sendButtonText: 
     {
@@ -258,9 +256,6 @@ const styles = StyleSheet.create({
       },
       backgroundContainer: {
         flex: 1,
-        // Remove marginTop if you want the purple background to extend to the top
-        // marginTop: 50 is likely pushing your content down and preventing the background color from filling the status bar area
-        // marginTop: 50
       },
 });
 

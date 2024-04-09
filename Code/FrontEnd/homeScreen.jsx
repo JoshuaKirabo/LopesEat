@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, StatusBar, Dimensions, FlatList, ImageBackground  } from 'react-native';
+import { TextInput, SafeAreaView, View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, StatusBar, Dimensions, FlatList, ImageBackground  } from 'react-native';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,7 +13,8 @@ import loginScreen from './loginScreen.jsx';
 import { useNavigation } from '@react-navigation/native';
 import ChatScreen from './chatScreen';
 
-import { CircularProgress } from 'react-native-svg-circular-progress'; 
+//import { CircularProgress } from 'react-native-svg-circular-progress';
+import * as Progress from 'react-native-progress'; 
 
 
 
@@ -24,6 +25,7 @@ const Tab = createBottomTabNavigator();
 
 
 const { width } = Dimensions.get('window'); // We will need this to format the meal cards
+
 
 const FavoritesTab = () => {
     return (
@@ -61,6 +63,7 @@ const getGreeting = () => {
 
 const HomeScreen = () => {
     const navigation = useNavigation(); // Assuming you've set up React Navigation correctly
+    
     
     useEffect(() => {
         const checkUserId = async () => {
@@ -125,6 +128,11 @@ const HomeTab = () =>
         const [activeMeal, setActiveMeal] = useState('Breakfast');
         const [mealOptions, setMealOptions] = useState(['Breakfast', 'Lunch', 'Dinner']); // Default meal options
 
+        const [customIntakeOz, setCustomIntakeOz] = useState('');
+        const [inputIntakeOz, setInputIntakeOz] = useState(''); // User input or adjusted by buttons
+        const [overallHydrationOz, setOverallHydrationOz] = useState(0); // Overall daily hydration in oz
+
+
         const CARD_WIDTH = width * 0.8; // 80% of the screen width for the card
         const CARD_OUTER_WIDTH = CARD_WIDTH + 20; // The total width including some margin
 
@@ -134,6 +142,17 @@ const HomeTab = () =>
         const scrollViewRef = useRef(null); // Initialize the ref for the ScrollView
 
         const navigation = useNavigation();
+
+        const handleCustomLogWaterIntake = () => {
+            const intakeAmount = parseFloat(customIntakeOz);
+            if (!isNaN(intakeAmount) && intakeAmount > 0) {
+                setHydration(prevState => ({
+                    ...prevState,
+                    current: Math.min(prevState.current + intakeAmount, prevState.goal)
+                }));
+            }
+            setCustomIntakeOz(''); // Reset custom input field
+        };
 
         const [progress, setProgress] = useState({
             carbs: 78,
@@ -156,6 +175,8 @@ const HomeTab = () =>
       
           checkUserId();
         }, [navigation]);
+
+        
 
         // New function to scroll to a meal card
     const scrollToMeal = (index) => {
@@ -336,35 +357,48 @@ const ProgressBar = ({progress, goal, color}) => (
   };
 
   const [hydration, setHydration] = useState({
-    current: 3000, // Starting value
-    goal: 4000, // Daily goal
+    current: 0, // Starting value
+    goal: 128, // Daily goal
 });
 
 // Functions to increment and decrement hydration level
-const handleIncrement = () => {
-    setHydration(prevState => ({
-        ...prevState,
-        current: prevState.current + 250 > prevState.goal ? prevState.goal : prevState.current + 250
-    }));
-};
+const handleIncrement = () => 
+    {
+        setInputIntakeOz(`${Math.max(0, parseInt(inputIntakeOz || '0') + 8)}`); // Prevent negative values and ensure input is treated as a number
+    };
 
-const handleDecrement = () => {
-    setHydration(prevState => ({
-        ...prevState,
-        current: prevState.current - 250 < 0 ? 0 : prevState.current - 250
-    }));
-};
+const handleDecrement = () => 
+    {
+        setInputIntakeOz(`${Math.max(0, parseInt(inputIntakeOz || '0') - 8)}`); // Ensure value doesn't go below 0
+    };
+
+    const handleLogWaterIntake = () => 
+        {
+            const intakeAmountOz = parseFloat(inputIntakeOz);
+            if (!isNaN(intakeAmountOz) && intakeAmountOz > 0) 
+                {
+                    setHydration(prevHydration => ({
+                        ...prevHydration,
+                        current: Math.min(prevHydration.current + intakeAmountOz, prevHydration.goal)
+                    }));
+                    setInputIntakeOz(''); // Reset input field after logging
+                }
+        };
+
+
+          
+    
   
-  const TodaysActivity = () => {
-    // Add your state and functions for today's activity here
-  
-    return (
-      <View style={styles.todaysActivityContainer}>
-        <Text style={styles.todaysActivityTitle}>Today's Activity</Text>
-        {/* Implement the activity rings and progress bars here */}
-      </View>
-    );
-  };
+  const TodaysActivity = () => 
+    {
+    
+        return (
+        <View style={styles.todaysActivityContainer}>
+            <Text style={styles.todaysActivityTitle}>Today's Activity</Text>
+            {/* Implement the activity rings and progress bars here */}
+        </View>
+        );
+    };
   
   const Overview = () => {
     // Add your state and functions for the overview here
@@ -460,33 +494,53 @@ const scrollViewContent = {
                     <View style={styles.hydrationCardContainer}>
                         <Text style={styles.hydrationTitle}>Hydration Tracker</Text>
 
-                        <View style={styles.circularProgressContainer}>
-                            <CircularProgress
-                            value={hydration.current}
-                            maxValue={hydration.goal}
-                            radius={100}
-                            activeStrokeWidth={10}
-                            inActiveStrokeWidth={10}
-                            inActiveStrokeColor="#ddd"
-                            activeStrokeColor="#6200ee"
-                            childrenContainerStyle={styles.circularProgressChildrenContainer}
-                            >
-                            <Text style={styles.circularProgressText}>
-                                {Math.round((hydration.current / hydration.goal) * 100)}%
-                            </Text>
-                            <Text style={styles.circularProgressSubText}>
-                                {hydration.current} / {hydration.goal} ml
-                            </Text>
-                            </CircularProgress>
-                        </View>
+                        <View style={styles.hydrationTrackerContainer}>
+                            <View style={styles.circularProgressContainer}>
+                                <CircularProgress
+                                    key={hydration.current}
+                                    maxValue={hydration.goal}
+                                    radius={100}
+                                    activeStrokeWidth={10}
+                                    inActiveStrokeWidth={10}
+                                    inActiveStrokeColor="#ddd"
+                                    activeStrokeColor="#6200ee"
+                                    >
+                                    <Text style={styles.circularProgressText}>
+                                        {Math.round((hydration.current / hydration.goal) * 100)}%
+                                    </Text>
+                                    <Text style={styles.circularProgressSubText}>
+                                        {hydration.current} / {hydration.goal} oz
+                                    </Text>
+                                </CircularProgress>
+                            </View>
 
-                        <View style={styles.hydrationControlContainer}>
-                            <TouchableOpacity style={styles.hydrationButton} onPress={handleDecrement}>
-                            <AntDesign name="minus" size={24} color="white" />
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.hydrationButton} onPress={handleIncrement}>
-                            <AntDesign name="plus" size={24} color="white" />
-                            </TouchableOpacity>
+                            <View style={styles.hydrationControlContainer}>
+                                <View style={styles.plusMinusContainer}>
+                                    {/* - Button */}
+                                    <TouchableOpacity style={styles.hydrationButton} onPress={handleDecrement}>
+                                        <AntDesign name="minus" size={24} color="white" />
+                                    </TouchableOpacity>
+
+                                <View style={styles.waterIntakeInputContainer}>
+                                    <TextInput
+                                        style={styles.waterIntakeInput}
+                                        onChangeText={setCustomIntakeOz}
+                                        value={inputIntakeOz}
+                                        keyboardType="numeric"
+                                        placeholder="oz"
+                                        placeholderTextColor="white"
+                                    />
+                                </View>
+
+                                    {/* + Button */}
+                                    <TouchableOpacity style={styles.hydrationButton} onPress={handleIncrement}>
+                                        <AntDesign name="plus" size={24} color="white" />
+                                    </TouchableOpacity>
+                                </View>
+                                <TouchableOpacity style={styles.logWaterIntakeButton} onPress={handleLogWaterIntake}>
+                                    <Text style={styles.logWaterIntakeButtonText}>LOG WATER INTAKE</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
 
@@ -520,8 +574,8 @@ const scrollViewContent = {
                             value="72 bpm"
                             status="Normal"
                         />
-  {/* Other metrics... */}
-</View>
+
+                    </View>
             
                     {/* Add bottom tab navigation components if necessary */}
         </ScrollView>
@@ -740,8 +794,16 @@ const scrollViewContent = {
             color: '#666',
             marginTop: 10,
         },
-    hydrationCardContainer: {
-            backgroundColor: '#FFF',
+    hydrationTitle:
+        {
+            fontSize: 25,
+            fontWeight: 'bold',
+            color: 'white',
+
+        },
+    hydrationCardContainer: 
+        {
+            backgroundColor: '#19A8DB',
             borderRadius: 20,
             padding: 20,
             marginRight: 20,
@@ -751,22 +813,67 @@ const scrollViewContent = {
             shadowOpacity: 0.1,
             shadowRadius: 4,
             elevation: 3,
-            alignItems: 'center', // Center align items for Android
+           // alignItems: 'center', // Center align items for Android
           },
-    healthMetricsContainer: {
+    hydrationTrackerContainer: 
+        {
+            flexDirection: 'row', // Align circle and buttons horizontally
+            alignItems: 'center', // Center items vertically
+            justifyContent: 'space-between', // Use available space between circle and buttons
+            marginTop: 10, // Add some space between title and content
+          },
+    circularProgressContainer: 
+        {
+            flex: 3, // Allow the circle to take more space
+        },
+    plusMinusContainer: 
+        {
+            flex: 1, // Limit the space for + and - buttons
+            justifyContent: 'space-around', // Distribute space around buttons
+            alignItems: 'center', // Center buttons vertically
+            flexDirection: 'row', // Align circle and buttons horizontally
+          },
+    hydrationButton: 
+        {
+            marginBottom: 10, // Add space between buttons if needed
+            color: 'black',
+        },
+    waterIntakeInput: 
+        {
+            backgroundColor: 'rgba(255, 255, 255, 0.2)', // Semi-transparent background
+            color: 'white', // Text color
+            paddingHorizontal: 10, // Horizontal padding
+            paddingVertical: 5, // Vertical padding
+            borderRadius: 5, // Rounded corners
+            textAlign: 'center', // Center the text
+            marginHorizontal: 10, // Space between minus button, input, and plus button
+            width: 60, // Set a fixed width for the input box
+        },
+    logWaterIntakeButton:
+        {
+            borderRadius: 20,
+            backgroundColor: 'white',
+            padding: 10,
+            alignItems: 'center'
+        },
+    logWaterIntakeButtonText:
+        {
+            fontWeight: 'bold',
+        },
+    healthMetricsContainer: 
+        {
             flexDirection: 'row',
             justifyContent: 'space-around',
             padding: 10,
             // Add more styling as needed
-          },
+        },
     metricCard: 
         {
             backgroundColor: '#FFF',
             borderRadius: 10,
             padding: 10,
             alignItems: 'center',
-            // Add more styling as needed
-          },
+        },
     metricTitle: 
         {
             // Styling for the metric title
