@@ -1,0 +1,13 @@
+Joshua,Kirabo,joshua.kirabo@my.gcu.edu,password123,Male,2001-08-12,2750
+Emily,Johnson,emily.johnson@my.gcu.edu,password123,Female,1999-06-22,200
+Michael,Brown,michael.brown@my.gcu.edu,password123,Male,2001-09-10,150
+Sarah,Davis,sarah.davis@my.gcu.edu,password123,Female,2002-12-01,180
+Daniel,Miller,daniel.miller@my.gcu.edu,password123,Male,1998-05-05,120
+Jessica,Wilson,jessica.wilson@my.gcu.edu,password123,Female,2000-07-30,210
+David,Anderson,david.anderson@my.gcu.edu,password123,Male,1999-10-14,160
+Laura,Martinez,laura.martinez@my.gcu.edu,password123,Female,2001-01-26,190
+Kevin,Garcia,kevin.garcia@my.gcu.edu,password123,Male,2000-04-07,175
+Sophia,Lee,sophia.lee@my.gcu.edu,password123,Female,2002-11-17,165
+Christen,Guvna,christen.g@my.gcu.edu,password123,Female,2001-05-05,2165
+Jenna,Hayra,jennah.hayra@my.gcu.edu,password123,Female,2001-04-13,2340
+
