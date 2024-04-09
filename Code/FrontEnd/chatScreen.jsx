@@ -82,7 +82,7 @@ const ChatScreen = () => {
             {
                 setTimeout(async () => 
                     {
-                        const response = await fetch('http://localhost:3000/sendMessage/', {method: 'POST',headers: {'Content-Type': 'application/json',},body: JSON.stringify({ message: inputMessage, userId: userId }),});
+                        const response = await fetch('http://172.25.74.19:3000/sendMessage/', {method: 'POST',headers: {'Content-Type': 'application/json',},body: JSON.stringify({ message: inputMessage, userId: userId }),});
                         const data = await response.json();
                         setIsTyping(false); // Stop showing typing indicator
                         //saveUserId();

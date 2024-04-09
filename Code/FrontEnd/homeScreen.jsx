@@ -5,7 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, AntDesign } from '@expo/vector-icons';
 
 import ProfileScreen from './profileScreen'; 
 import loginScreen from './loginScreen.jsx';
@@ -13,10 +13,14 @@ import loginScreen from './loginScreen.jsx';
 import { useNavigation } from '@react-navigation/native';
 import ChatScreen from './chatScreen';
 
+import { CircularProgress } from 'react-native-svg-circular-progress'; 
+
 
 
 
 const Tab = createBottomTabNavigator();
+
+
 
 
 const { width } = Dimensions.get('window'); // We will need this to format the meal cards
@@ -37,7 +41,8 @@ const ChatTab = () => {
     );
 };
 
-const ProfileTab = () => {
+const ProfileTab = () => 
+{
     return (
         <View style={styles.container}>
             <Text>Profile Screen</Text>
@@ -55,6 +60,22 @@ const getGreeting = () => {
 
 
 const HomeScreen = () => {
+    const navigation = useNavigation(); // Assuming you've set up React Navigation correctly
+    
+    useEffect(() => {
+        const checkUserId = async () => {
+            const userId = await AsyncStorage.getItem('userId');
+            if (!userId) {
+                //console.error('No user ID found, navigating to login screen');
+                navigation.navigate('Welcome'); // Make sure 'Login' matches the name of your login screen in the navigator
+                return; // This halts further execution of this effect if no user ID is found
+            }
+            // Any additional setup can go here, if the user ID is found
+        };
+      
+        checkUserId();
+    }, []);
+
     return (
         <Tab.Navigator screenOptions={{ headerShown: false,  tabBarActiveTintColor: '#522398' }} >
             <Tab.Screen 
@@ -114,6 +135,15 @@ const HomeTab = () =>
 
         const navigation = useNavigation();
 
+        const [progress, setProgress] = useState({
+            carbs: 78,
+            protein: 100,
+            fat: 40,
+            caloriesConsumed: 1750,
+            caloriesBurned: 500,
+          });
+          
+
         useEffect(() => {
           const checkUserId = async () => {
             const userId = await AsyncStorage.getItem('userId');
@@ -171,7 +201,7 @@ const HomeTab = () =>
                                 if (!userId) throw new Error('No user ID found');
                               
                                 // Fetching the number of meals the user picked from the backend
-                                const response = await fetch(`http://localhost:3000/meals-count/${userId}`);
+                                const response = await fetch(`http://172.25.74.19:3000/meals-count/${userId}`);
                                 
                                 if (!response.ok) 
                                     {
@@ -289,6 +319,77 @@ const MealCard = ({ mealName, restaurantName, imageUri, index }) =>
   };
 // ==================== End of Meal Cards Section  ========================== //
 
+const ProgressBar = ({progress, goal, color}) => (
+    <View style={styles.progressBarContainer}>
+      <View style={[styles.progressBar, {width: `${(progress / goal) * 100}%`, backgroundColor: color}]} />
+    </View>
+  );
+
+  const ProgressCard = ({ title, progress, goal, color }) => {
+    return (
+      <View style={styles.progressCard}>
+        <Text style={styles.progressTitle}>{title}</Text>
+        <ProgressBar progress={progress} goal={goal} color={color} />
+        <Text style={styles.progressText}>{progress} / {goal} g</Text>
+      </View>
+    );
+  };
+
+  const [hydration, setHydration] = useState({
+    current: 3000, // Starting value
+    goal: 4000, // Daily goal
+});
+
+// Functions to increment and decrement hydration level
+const handleIncrement = () => {
+    setHydration(prevState => ({
+        ...prevState,
+        current: prevState.current + 250 > prevState.goal ? prevState.goal : prevState.current + 250
+    }));
+};
+
+const handleDecrement = () => {
+    setHydration(prevState => ({
+        ...prevState,
+        current: prevState.current - 250 < 0 ? 0 : prevState.current - 250
+    }));
+};
+  
+  const TodaysActivity = () => {
+    // Add your state and functions for today's activity here
+  
+    return (
+      <View style={styles.todaysActivityContainer}>
+        <Text style={styles.todaysActivityTitle}>Today's Activity</Text>
+        {/* Implement the activity rings and progress bars here */}
+      </View>
+    );
+  };
+  
+  const Overview = () => {
+    // Add your state and functions for the overview here
+  
+    return (
+      <View style={styles.overviewContainer}>
+        <Text style={styles.overviewTitle}>Overview</Text>
+        {/* Implement the overview UI elements here */}
+      </View>
+    );
+  };
+
+  const HealthMetrics = ({ iconName, title, value, status }) => {
+    return (
+      <View style={styles.metricCard}>
+        <FontAwesome name={iconName} size={24} color="#000" />
+        <Text style={styles.metricTitle}>{title}</Text>
+        <Text style={styles.metricValue}>{value}</Text>
+        <Text style={styles.metricStatus}>{status}</Text>
+      </View>
+    );
+  };
+
+  
+
 const scrollViewContent = {
     paddingHorizontal: CARD_MARGIN, // Use CARD_MARGIN for padding
     // Add any additional styles if necessary
@@ -297,63 +398,141 @@ const scrollViewContent = {
 
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <ScrollView style={styles.container}>
 
 
-                {/* Purple Dots */}
-                <View style={styles.dotsContainer}>
-                    <View style={[styles.dot, styles.activeDot]} />
-                    <View style={styles.dot} />
-                    <View style={styles.dot} />
-                </View>
+            <SafeAreaView style={styles.safeArea}>
+                <ScrollView style={styles.container}>
 
-                {/* Greeting */}
-                <Text style={styles.greeting}>{getGreeting()}</Text>
 
-                {/* Horizontal scroll for meal options */}
-                <View style={styles.mealOptionsContainer}>
-                    {mealOptions.map(renderMealOption)}
-                </View>
-                
-                {/* Meal card */}
-                <ScrollView
-  ref={scrollViewRef}
-  horizontal
-  pagingEnabled
-  showsHorizontalScrollIndicator={false}
-  snapToAlignment="center" // Snap to the center of the view
-  snapToInterval={CARD_WIDTH} // The entire width of a card plus margins
-  decelerationRate="fast"
-  contentContainerStyle={scrollViewContent}
->
-{meals.map((meal, index) => (
-    <View key={index} style={{}}>
-      <MealCard 
-        mealName={meal.name}
-        restaurantName={meal.restaurant}
-        imageUri={meal.image}
-      />
-    </View>
-  ))}
-</ScrollView>
-        
-                {/* Progress Section */}
-                <View style={styles.progressSection}>
-                <Text style={styles.sectionTitle}>Today's Progress</Text>
-                {/* Progress bars would go here */}
-                </View>
-        
-                {/* Other sections would follow here */}
-        
-                {/* Add bottom tab navigation components if necessary */}
-      </ScrollView>
-      </SafeAreaView>
+                    {/* Purple Dots */}
+                    <View style={styles.dotsContainer}>
+                        <View style={[styles.dot, styles.activeDot]} />
+                        <View style={styles.dot} />
+                        <View style={styles.dot} />
+                    </View>
+
+                    {/* Greeting */}
+                    <Text style={styles.greeting}>{getGreeting()}</Text>
+
+                    {/* Horizontal scroll for meal options */}
+                    <View style={styles.mealOptionsContainer}>
+                        {mealOptions.map(renderMealOption)}
+                    </View>
+                    
+                    {/* Meal card */}
+                    <ScrollView
+                    ref={scrollViewRef}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    //snapToAlignment="center" // Snap to the center of the view
+                    //snapToInterval={CARD_WIDTH} // The entire width of a card plus margins
+                    decelerationRate="fast"
+                    contentContainerStyle={scrollViewContent}
+                    >
+                        {meals.map((meal, index) => (
+                            <View key={index}>
+                                <MealCard 
+                                    mealName={meal.name}
+                                    restaurantName={meal.restaurant}
+                                    imageUri={meal.image}
+                                />
+                            </View>
+                        ))}
+                    </ScrollView>
+            
+                    {/* Progress Section */}
+                    <View style={styles.progressCardContainer}>
+                        <Text style={styles.sectionTitle}>Today's Progress</Text>
+                        <ProgressCard title="Carbs" progress={progress.carbs} goal={183} color="#FFA726" />
+                        <ProgressCard title="Protein" progress={progress.protein} goal={160} color="#FB8C00" />
+                        <ProgressCard title="Fat" progress={progress.fat} goal={51} color="#FF7043" />
+                        <Text style={styles.caloriesText}>
+                            Calories Consumed: {progress.caloriesConsumed} / 2500
+                        </Text>
+
+                        <Text style={styles.caloriesText}>
+                            Calories Burned: {progress.caloriesBurned}
+                        </Text>
+                    </View>
+
+                    {/* Hydration Tracker Section */}
+                    <View style={styles.hydrationCardContainer}>
+                        <Text style={styles.hydrationTitle}>Hydration Tracker</Text>
+
+                        <View style={styles.circularProgressContainer}>
+                            <CircularProgress
+                            value={hydration.current}
+                            maxValue={hydration.goal}
+                            radius={100}
+                            activeStrokeWidth={10}
+                            inActiveStrokeWidth={10}
+                            inActiveStrokeColor="#ddd"
+                            activeStrokeColor="#6200ee"
+                            childrenContainerStyle={styles.circularProgressChildrenContainer}
+                            >
+                            <Text style={styles.circularProgressText}>
+                                {Math.round((hydration.current / hydration.goal) * 100)}%
+                            </Text>
+                            <Text style={styles.circularProgressSubText}>
+                                {hydration.current} / {hydration.goal} ml
+                            </Text>
+                            </CircularProgress>
+                        </View>
+
+                        <View style={styles.hydrationControlContainer}>
+                            <TouchableOpacity style={styles.hydrationButton} onPress={handleDecrement}>
+                            <AntDesign name="minus" size={24} color="white" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.hydrationButton} onPress={handleIncrement}>
+                            <AntDesign name="plus" size={24} color="white" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+            
+                    {/* Health Metrics Section */}
+                    <View style={styles.healthMetricsContainer}>
+                        <HealthMetrics
+                            title="Current Weight"
+                            icon="heartbeat"
+                            value="72 bpm"
+                            status="Normal"
+                        />
+
+                        <HealthMetrics
+                            title="Steps"
+                            icon="heartbeat"
+                            value="72 bpm"
+                            status="Normal"
+                        />
+
+                        <HealthMetrics
+                            title="Water Intake"
+                            icon="heartbeat"
+                            value="72 bpm"
+                            status="Normal"
+                        />
+
+                        <HealthMetrics
+                            title="Calories"
+                            icon="heartbeat"
+                            value="72 bpm"
+                            status="Normal"
+                        />
+  {/* Other metrics... */}
+</View>
+            
+                    {/* Add bottom tab navigation components if necessary */}
+        </ScrollView>
+        </SafeAreaView>
+
     );
   };
   
   
   const styles = StyleSheet.create({
+
     safeArea: 
         {
             flex: 1,
@@ -370,10 +549,7 @@ const scrollViewContent = {
             paddingLeft: 50,
             paddingTop: 15,
         },
-    cardContainer: 
-        {
-            // Styling for the card container
-        },
+    
     dotsContainer: 
         {
             flex: 1,
@@ -407,28 +583,34 @@ const scrollViewContent = {
         },
     mealOption: 
         {
-            // You may not need additional styling here unless you want padding or other spacing
-            
+            flex: 1, // This will make each option take up equal space
+            justifyContent: 'center', // This centers text vertically
+            alignItems: 'center', // This centers text horizontally
         },
     activeMealText: 
         {
-            fontSize: 30,
+            fontSize: 19,
             fontWeight: 'bold',
             color: 'black', // Active state color
         },
     inactiveMealText: 
         {
-            fontSize: 25,
+            fontSize: 15,
             color: 'grey', // Inactive state color
         },
     mealsScrollView: 
         {
             flexDirection: 'row',
         },
+    cardContainer: 
+        {
+
+        },
     card: 
         {
             borderRadius: 20,
-            width: width - 40, // Use the full width of the screen minus some margin
+            width: width * 0.9, 
+            alignSelf: 'center',
             height: 200,
             margin: 20,
             flexDirection: 'row', 
@@ -500,8 +682,103 @@ const scrollViewContent = {
             width: '100%',
             height: '100%',
           },
-          
-
+    progressSection: 
+        {
+            margin: 20,
+        },
+    progressBarContainer: 
+        {
+            height: 20,
+            width: '100%',
+            backgroundColor: '#e0e0e0',
+            borderRadius: 10,
+        },
+    progressBar: 
+        {
+            height: '100%',
+            borderRadius: 10,
+        },
+    sectionTitle: 
+        {
+            fontSize: 20,
+            fontWeight: 'bold',
+            marginBottom: 10,
+        },
+    progressCardContainer: 
+        {
+            borderRadius: 20,
+            backgroundColor: '#FFF',
+            padding: 20,
+            margin: 20,
+            // Apply shadow for iOS
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            // Apply elevation for Android
+            elevation: 3,
+        },
+    progressCard: 
+        {
+            marginBottom: 10,
+        },
+    progressTitle: 
+        {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: '#333',
+        },
+    progressText: 
+        {
+            fontSize: 16,
+            color: '#666',
+            textAlign: 'right',
+        },
+    caloriesText: 
+        {
+            fontSize: 16,
+            color: '#666',
+            marginTop: 10,
+        },
+    hydrationCardContainer: {
+            backgroundColor: '#FFF',
+            borderRadius: 20,
+            padding: 20,
+            marginRight: 20,
+            marginLeft: 20,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+            alignItems: 'center', // Center align items for Android
+          },
+    healthMetricsContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+            padding: 10,
+            // Add more styling as needed
+          },
+    metricCard: 
+        {
+            backgroundColor: '#FFF',
+            borderRadius: 10,
+            padding: 10,
+            alignItems: 'center',
+            // Add more styling as needed
+          },
+    metricTitle: 
+        {
+            // Styling for the metric title
+        },
+    metricValue: 
+        {
+            // Styling for the metric value
+        },
+    metricStatus: 
+        {
+            // Styling for the metric status
+        },  
     });
   
 
