@@ -112,7 +112,7 @@ export default function App()
           {
             try 
               {
-                const response = await axios.get('http://localhost:3000/checkLoggedIn', { params: { userId } });
+                const response = await axios.get('http://172.25.74.19:3000/checkLoggedIn', { params: { userId } });
                 if (!response.data.isLoggedIn) 
                   {
                     setInitialRouteName('Login');

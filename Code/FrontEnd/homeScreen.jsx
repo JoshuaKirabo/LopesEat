@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, StatusBar, Dimensions, FlatList, ImageBackground  } from 'react-native';
+import { TextInput, SafeAreaView, View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, StatusBar, Dimensions, FlatList, ImageBackground  } from 'react-native';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,7 +13,8 @@ import loginScreen from './loginScreen.jsx';
 import { useNavigation } from '@react-navigation/native';
 import ChatScreen from './chatScreen';
 
-import { CircularProgress } from 'react-native-svg-circular-progress'; 
+//import { CircularProgress } from 'react-native-svg-circular-progress';
+import * as Progress from 'react-native-progress'; 
 
 
 
@@ -24,6 +25,7 @@ const Tab = createBottomTabNavigator();
 
 
 const { width } = Dimensions.get('window'); // We will need this to format the meal cards
+
 
 const FavoritesTab = () => {
     return (
@@ -57,10 +59,13 @@ const getGreeting = () => {
     return 'Good Evening';
   };
 
+  
+
 
 
 const HomeScreen = () => {
     const navigation = useNavigation(); // Assuming you've set up React Navigation correctly
+    
     
     useEffect(() => {
         const checkUserId = async () => {
@@ -125,6 +130,11 @@ const HomeTab = () =>
         const [activeMeal, setActiveMeal] = useState('Breakfast');
         const [mealOptions, setMealOptions] = useState(['Breakfast', 'Lunch', 'Dinner']); // Default meal options
 
+        const [customIntakeOz, setCustomIntakeOz] = useState('');
+        const [inputIntakeOz, setInputIntakeOz] = useState(''); // User input or adjusted by buttons
+        const [overallHydrationOz, setOverallHydrationOz] = useState(0); // Overall daily hydration in oz
+
+
         const CARD_WIDTH = width * 0.8; // 80% of the screen width for the card
         const CARD_OUTER_WIDTH = CARD_WIDTH + 20; // The total width including some margin
 
@@ -133,7 +143,26 @@ const HomeTab = () =>
 
         const scrollViewRef = useRef(null); // Initialize the ref for the ScrollView
 
+        const [steps, setSteps] = useState(67);
+        const [userWeight, setUserWeight] = useState(0); // State to store user weight
+        const stepGoal = 15000;
+
+        const [heartRate, setHeartRate] = useState(72); // Initial heart rate set to 60 BPM as an example
+
+
+
         const navigation = useNavigation();
+
+        const handleCustomLogWaterIntake = () => {
+            const intakeAmount = parseFloat(customIntakeOz);
+            if (!isNaN(intakeAmount) && intakeAmount > 0) {
+                setHydration(prevState => ({
+                    ...prevState,
+                    current: Math.min(prevState.current + intakeAmount, prevState.goal)
+                }));
+            }
+            setCustomIntakeOz(''); // Reset custom input field
+        };
 
         const [progress, setProgress] = useState({
             carbs: 78,
@@ -142,6 +171,60 @@ const HomeTab = () =>
             caloriesConsumed: 1750,
             caloriesBurned: 500,
           });
+
+          const [carouselItems, setCarouselItems] = useState([
+            {
+              title: "Make better dieting decisions",
+              subtitle: "Dr. Deborah K",
+              image: require('./Images/carousel/debz.png'),
+            },
+            {
+              title: "Top 10 meal combinations",
+              subtitle: "Chef Jerry I",
+              image: require('./Images/carousel/chef.png'),
+            },
+            {
+                title: "Sleep Hygiene for Better Rest",
+                subtitle: "Coach Mark. M",
+                image: require('./Images/carousel/mark.png'),
+            },
+            {
+                title: "Dieting Dad Jokes",
+                subtitle: "Prof. Bill Hughes",
+                image: require('./Images/carousel/prof.png'),
+            },
+            {
+                title: "Stress Management Techniques",
+                subtitle: "Ms. Christen N",
+                image: require('./Images/carousel/christen.png'),
+            },
+            {
+                title: "The Power of Hydration",
+                subtitle: "Dr. Jessica L",
+                image: require('./Images/carousel/yt-doc.png'),
+            },
+            {
+                title: "Home Workouts for Busy Schedules",
+                subtitle: "Coach Kisaku D",
+                image: require('./Images/carousel/ben.png'),
+            },
+            
+            
+            // Add more items as needed
+          ]);
+        
+          const [activeIndex, setActiveIndex] = useState(0);
+        
+          useEffect(() => {
+            const interval = setInterval(() => {
+              let nextIndex = activeIndex + 1 === carouselItems.length ? 0 : activeIndex + 1;
+              scrollViewRef.current.scrollTo({x: width * nextIndex, animated: true});
+              setActiveIndex(nextIndex);
+            }, 5000); // Change item every 5 seconds
+        
+            return () => clearInterval(interval);
+          }, [activeIndex, carouselItems.length]); 
+
           
 
         useEffect(() => {
@@ -156,6 +239,8 @@ const HomeTab = () =>
       
           checkUserId();
         }, [navigation]);
+
+        
 
         // New function to scroll to a meal card
     const scrollToMeal = (index) => {
@@ -187,7 +272,15 @@ const HomeTab = () =>
                 scrollViewRef.current.scrollTo({ x: xPosition, animated: true });
               };
 
-
+              useEffect(() => {
+                // Increment steps by 43 every 20 minutes
+                const interval = setInterval(() => {
+                  setSteps((prevSteps) => prevSteps + 43);
+                }, 1200000); // 1200000 ms = 20 minutes
+              
+                // Cleanup function to clear the interval when the component unmounts
+                return () => clearInterval(interval);
+              }, []);
         
 
         useEffect(() => 
@@ -267,6 +360,57 @@ const HomeTab = () =>
                 fetchMealsData();
               }, []);
 
+              useEffect(() => {
+                // Function to fetch user weight
+                const fetchUserWeight = async () => {
+                    try {
+                        // Assuming the userId is stored and accessible
+                        const userId = await AsyncStorage.getItem('userId');
+                        if (!userId) {
+                            console.error('No user ID found, unable to fetch weight');
+                            return;
+                        }
+        
+                        const response = await fetch(`http://172.25.74.19:3000/getUserWeight/${userId}`);
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch user weight');
+                        }
+                        
+                        const data = await response.json();
+                        // Assuming the response has a weight field
+                        setUserWeight(data.weight);
+                    } catch (error) {
+                        console.error('Error fetching user weight:', error);
+                    }
+                };
+        
+                fetchUserWeight();
+            }, []);
+
+            useEffect(() => {
+                const calculateNewHeartRate = (currentHeartRate) => {
+                    const heartRateChange = Math.floor(Math.random() * 7) - 3; // Random change between -3 and +3
+                    let newHeartRate = currentHeartRate + heartRateChange;
+
+                    // Ensure the new heart rate is within the 60-100 range
+                    newHeartRate = Math.max(60, Math.min(100, newHeartRate));
+                    return newHeartRate;
+                };
+                
+
+                  // Function to simulate heart rate changes
+                    const simulateHeartRate = () => {
+                        setHeartRate((currentHeartRate) => calculateNewHeartRate(currentHeartRate));
+                    };
+            
+                  // Set an interval for simulating heart rate changes
+                    const interval = setInterval(simulateHeartRate, Math.random() * (10000 - 1000) + 1500); // Randomized
+
+                    // Cleanup function to clear the interval when the component unmounts
+                    return () => clearInterval(interval);
+            }, []);
+            
+
   const screenWidth = Dimensions.get('window').width;
 
 // ==================== Meals Section  ============================= //
@@ -304,7 +448,7 @@ const MealCard = ({ mealName, restaurantName, imageUri, index }) =>
                 {/* Blurred background image */}
                 <ImageBackground source={imageUri} style={styles.fullSize} imageStyle={styles.blurredImage}  blurRadius={10} >
                 
-                    <View style={styles.textContainer}>
+                    <View style={styles.mealCardTextContainer}>
                         <Text style={styles.mealName}>{mealName}</Text>
                         <Text style={styles.restaurantName}>{restaurantName}</Text>
                         
@@ -336,35 +480,48 @@ const ProgressBar = ({progress, goal, color}) => (
   };
 
   const [hydration, setHydration] = useState({
-    current: 3000, // Starting value
-    goal: 4000, // Daily goal
+    current: 0, // Starting value
+    goal: 128, // Daily goal
 });
 
 // Functions to increment and decrement hydration level
-const handleIncrement = () => {
-    setHydration(prevState => ({
-        ...prevState,
-        current: prevState.current + 250 > prevState.goal ? prevState.goal : prevState.current + 250
-    }));
-};
+const handleIncrement = () => 
+    {
+        setInputIntakeOz(`${Math.max(0, parseInt(inputIntakeOz || '0') + 8)}`); // Prevent negative values and ensure input is treated as a number
+    };
 
-const handleDecrement = () => {
-    setHydration(prevState => ({
-        ...prevState,
-        current: prevState.current - 250 < 0 ? 0 : prevState.current - 250
-    }));
-};
+const handleDecrement = () => 
+    {
+        setInputIntakeOz(`${Math.max(0, parseInt(inputIntakeOz || '0') - 8)}`); // Ensure value doesn't go below 0
+    };
+
+    const handleLogWaterIntake = () => 
+        {
+            const intakeAmountOz = parseFloat(inputIntakeOz);
+            if (!isNaN(intakeAmountOz) && intakeAmountOz > 0) 
+                {
+                    setHydration(prevHydration => ({
+                        ...prevHydration,
+                        current: Math.min(prevHydration.current + intakeAmountOz, prevHydration.goal)
+                    }));
+                    setInputIntakeOz(''); // Reset input field after logging
+                }
+        };
+
+
+          
+    
   
-  const TodaysActivity = () => {
-    // Add your state and functions for today's activity here
-  
-    return (
-      <View style={styles.todaysActivityContainer}>
-        <Text style={styles.todaysActivityTitle}>Today's Activity</Text>
-        {/* Implement the activity rings and progress bars here */}
-      </View>
-    );
-  };
+  const TodaysActivity = () => 
+    {
+    
+        return (
+        <View style={styles.todaysActivityContainer}>
+            <Text style={styles.todaysActivityTitle}>Today's Activity</Text>
+            {/* Implement the activity rings and progress bars here */}
+        </View>
+        );
+    };
   
   const Overview = () => {
     // Add your state and functions for the overview here
@@ -377,16 +534,7 @@ const handleDecrement = () => {
     );
   };
 
-  const HealthMetrics = ({ iconName, title, value, status }) => {
-    return (
-      <View style={styles.metricCard}>
-        <FontAwesome name={iconName} size={24} color="#000" />
-        <Text style={styles.metricTitle}>{title}</Text>
-        <Text style={styles.metricValue}>{value}</Text>
-        <Text style={styles.metricStatus}>{status}</Text>
-      </View>
-    );
-  };
+
 
   
 
@@ -458,72 +606,139 @@ const scrollViewContent = {
 
                     {/* Hydration Tracker Section */}
                     <View style={styles.hydrationCardContainer}>
+                        <ImageBackground
+                         source={require('./Animations/hydration.gif')} // The path to your .gif file
+                         resizeMode="stretch" // or "stretch"
+                        style={styles.gifBackground}
+                        >
                         <Text style={styles.hydrationTitle}>Hydration Tracker</Text>
 
-                        <View style={styles.circularProgressContainer}>
-                            <CircularProgress
-                            value={hydration.current}
-                            maxValue={hydration.goal}
-                            radius={100}
-                            activeStrokeWidth={10}
-                            inActiveStrokeWidth={10}
-                            inActiveStrokeColor="#ddd"
-                            activeStrokeColor="#6200ee"
-                            childrenContainerStyle={styles.circularProgressChildrenContainer}
-                            >
-                            <Text style={styles.circularProgressText}>
-                                {Math.round((hydration.current / hydration.goal) * 100)}%
-                            </Text>
-                            <Text style={styles.circularProgressSubText}>
-                                {hydration.current} / {hydration.goal} ml
-                            </Text>
-                            </CircularProgress>
+                        <View style={styles.hydrationTrackerContainer}>
+                            <View style={styles.circularProgressContainer}>
+                                <Progress.Circle
+                                     size={100}
+                                     progress={hydration.current / hydration.goal}
+                                     thickness={10}
+                                     color="#6200ee"
+                                     unfilledColor="#ddd"
+                                     borderWidth={0}
+
+                                    >
+                                    
+                            
+                                        <Text style={styles.circularProgressText}>
+                                            {Math.round((hydration.current / hydration.goal) * 100)}%
+                                        </Text>
+
+
+                                    <Text style={styles.circularProgressSubText}>
+                                        {hydration.current} / {hydration.goal} oz
+                                    </Text>
+                                </Progress.Circle>
+                            </View>
+
+                            <View style={styles.hydrationControlContainer}>
+                                <View style={styles.plusMinusContainer}>
+                                    {/* - Button */}
+                                    <TouchableOpacity style={styles.hydrationButton} onPress={handleDecrement}>
+                                        <AntDesign name="minus" size={24} color="white" />
+                                    </TouchableOpacity>
+
+                                <View style={styles.waterIntakeInputContainer}>
+                                    <TextInput
+                                        style={styles.waterIntakeInput}
+                                        onChangeText={setCustomIntakeOz}
+                                        value={inputIntakeOz}
+                                        keyboardType="numeric"
+                                        placeholder="oz"
+                                        placeholderTextColor="white"
+                                    />
+                                </View>
+
+                                    {/* + Button */}
+                                    <TouchableOpacity style={styles.hydrationButton} onPress={handleIncrement}>
+                                        <AntDesign name="plus" size={24} color="white" />
+                                    </TouchableOpacity>
+                                </View>
+                                <TouchableOpacity style={styles.logWaterIntakeButton} onPress={handleLogWaterIntake}>
+                                    <Text style={styles.logWaterIntakeButtonText}>Log</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        </ImageBackground>
+                    </View>
+
+
+
+            
+                    {/* Health Metrics Section - PT 1 */}
+                    
+                    <View style={styles.healthMetricsContainer}>
+                         {/* Steps */}
+                         <View style={styles.stepsCard}>
+                            <ImageBackground source={require('./Animations/stepsbg.jpg')} resizeMode="stretch" style={styles.stepsBackground}>
+                                <Text style={styles.weightTitle}>Steps</Text>
+                                <Image source={require('./Animations/steps.gif')} style={styles.weightIcon}/>
+                                <Text style={styles.currentWeightValue}>{steps} / {stepGoal.toLocaleString()}</Text>
+                            </ImageBackground>
                         </View>
 
-                        <View style={styles.hydrationControlContainer}>
-                            <TouchableOpacity style={styles.hydrationButton} onPress={handleDecrement}>
-                            <AntDesign name="minus" size={24} color="white" />
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.hydrationButton} onPress={handleIncrement}>
-                            <AntDesign name="plus" size={24} color="white" />
-                            </TouchableOpacity>
+                        {/* Weight */}
+                        <View style={styles.weightCard}>
+                            <ImageBackground source={require('./Animations/weightbg.png')} resizeMode="stretch" style={styles.weightBackground}>
+                                <Text style={styles.weightTitle}>Weight</Text>
+                                <Image source={require('./Animations/weight.gif')} style={styles.weightIcon}/>
+                                <Text style={styles.currentWeightValue}>{userWeight ? `${userWeight} lbs` : "Loading..."}</Text>
+                            </ImageBackground>
                         </View>
                     </View>
 
-            
-                    {/* Health Metrics Section */}
-                    <View style={styles.healthMetricsContainer}>
-                        <HealthMetrics
-                            title="Current Weight"
-                            icon="heartbeat"
-                            value="72 bpm"
-                            status="Normal"
-                        />
+                    {/* Health Metrics Section - PT 2 */}
+                    <View style={styles.healthMetricsContainer2}>
+                         {/* Heart Rate */}
+                         <View style={styles.heartRateCard}>
+                            <ImageBackground source={require('./Animations/heartbeatbg.gif')} resizeMode="stretch" style={styles.heartRateBackground}>
+                                <Text style={styles.heartRateTitle}>Heart Rate</Text>
+                                <Image source={require('./Animations/heartbeat.gif')} style={styles.heartRateIcon}/>
+                                <Text style={styles.heartRateValue}>{heartRate} BPM</Text>
+                            </ImageBackground>
+                        </View>
 
-                        <HealthMetrics
-                            title="Steps"
-                            icon="heartbeat"
-                            value="72 bpm"
-                            status="Normal"
-                        />
+                        {/* Sleep*/}
+                        <View style={styles.heartRateCard}>
+                            <ImageBackground source={require('./Animations/sleepbg.gif')} resizeMode="stretch" style={styles.heartRateBackground}>
+                                <Text style={styles.heartRateTitle}>Sleep</Text>
+                                <Image source={require('./Animations/sleep.gif')} style={styles.heartRateIcon}/>
+                                <Text style={styles.heartRateValue}>6.5 hrs</Text>
+                            </ImageBackground>
+                        </View>
+                    </View>
 
-                        <HealthMetrics
-                            title="Water Intake"
-                            icon="heartbeat"
-                            value="72 bpm"
-                            status="Normal"
-                        />
-
-                        <HealthMetrics
-                            title="Calories"
-                            icon="heartbeat"
-                            value="72 bpm"
-                            status="Normal"
-                        />
-  {/* Other metrics... */}
-</View>
-            
-                    {/* Add bottom tab navigation components if necessary */}
+                {/* Carousel */}
+                <View style={styles.carouselAreaGen}>
+                <Text style={styles.blog}>Blog</Text>
+                <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                style={{width: '100%', height: 200}}
+                >
+                    <View style={styles.carouselArea}>
+                    {carouselItems.map((item, index) => (
+                        <View key={index} style={styles.carouselCard}>
+                            <View style={styles.imageContainer}>
+                                <Image source={item.image} style={styles.carouselImage} />
+                            </View>
+                            <View style={styles.textContainer}>
+                                <Text style={styles.carouselTitle}>{item.title}</Text>
+                                <Text style={styles.carouselSubtitle}>{item.subtitle}</Text>
+                            </View>
+                        </View>
+                ))}
+                    </View>
+                </ScrollView>
+                </View>
         </ScrollView>
         </SafeAreaView>
 
@@ -549,7 +764,6 @@ const scrollViewContent = {
             paddingLeft: 50,
             paddingTop: 15,
         },
-    
     dotsContainer: 
         {
             flex: 1,
@@ -620,7 +834,7 @@ const scrollViewContent = {
             borderRadius: 30,
             marginHorizontal: 20,
             marginRight: 10,
-            //marginVertical: 10,
+
 
             // Apply shadow for iOS
             shadowColor: '#000',
@@ -638,7 +852,7 @@ const scrollViewContent = {
             marginLeft: 'auto',
             borderRadius: 30,
         },
-    textContainer: 
+    mealCardTextContainer: 
         {
             zIndex: 1, // Ensure text container is above the blurred background
             position: 'absolute',
@@ -740,10 +954,25 @@ const scrollViewContent = {
             color: '#666',
             marginTop: 10,
         },
-    hydrationCardContainer: {
-            backgroundColor: '#FFF',
+
+    gifBackground: 
+        {
+            flex: 1, // or width and height to fill the space of the card
+            alignItems: 'center', // if you want to center the content
+            borderRadius: 30,
+            height: 200
+        },
+    hydrationTitle:
+        {
+            fontSize: 25,
+            fontWeight: 'bold',
+            color: 'white',
+        },
+    hydrationCardContainer: 
+        {
+            backgroundColor: '#19A8DB',
             borderRadius: 20,
-            padding: 20,
+            
             marginRight: 20,
             marginLeft: 20,
             shadowColor: '#000',
@@ -751,34 +980,240 @@ const scrollViewContent = {
             shadowOpacity: 0.1,
             shadowRadius: 4,
             elevation: 3,
-            alignItems: 'center', // Center align items for Android
+            
+           // alignItems: 'center', // Center align items for Android
           },
-    healthMetricsContainer: {
-            flexDirection: 'row',
-            justifyContent: 'space-around',
-            padding: 10,
-            // Add more styling as needed
-          },
-    metricCard: 
+    hydrationTrackerContainer: 
         {
+            flexDirection: 'row', // Align circle and buttons horizontally
+            alignItems: 'center', // Center items vertically
+            justifyContent: 'space-between', // Use available space between circle and buttons
+            marginTop: 10, // Add some space between title and content
+          },
+    circularProgressContainer: 
+        {
+            //flex: 3, 
+            marginRight: 70,
+        },
+    circularProgressText: 
+        {
+            textAlign: 'center',
+            fontSize: 16,
+            color: 'black',
+            fontWeight: 'bold',
+            
+        },
+    plusMinusContainer: 
+        {
+            flex: 1, // Limit the space for + and - buttons
+            justifyContent: 'space-around', // Distribute space around buttons
+            alignItems: 'center', // Center buttons vertically
+            flexDirection: 'row', // Align circle and buttons horizontally
+            
+          },
+    hydrationButton: 
+        {
+            marginBottom: 10, // Add space between buttons if needed
+            color: 'black',
+        },
+    waterIntakeInput: 
+        {
+            backgroundColor: 'rgba(255, 255, 255, 0.2)', // Semi-transparent background
+            color: 'black', // Text color
+            paddingHorizontal: 10, // Horizontal padding
+            paddingVertical: 5, // Vertical padding
+            borderRadius: 5, // Rounded corners
+            textAlign: 'center', // Center the text
+            marginHorizontal: 10, // Space between minus button, input, and plus button
+            width: 60, // Set a fixed width for the input box
+        },
+    logWaterIntakeButton:
+        {
+            borderRadius: 20,
+            backgroundColor: 'white',
+            padding: 10,
+            alignItems: 'center'
+        },
+    logWaterIntakeButtonText:
+        {
+            fontWeight: 'bold',
+        },
+    healthMetricsContainer: 
+        {
+            flexDirection: 'row',
+            justifyContent: 'center',
+            marginTop: 20,
+            alignItems: 'center',
+        },
+    stepsCard:
+        {
+            padding: 10,
+            alignItems: 'center', // This ensures vertical centering within the stepsCard
+            justifyContent: 'center',
+            overflow: 'hidden', 
+            
+        },
+    stepsTitle:
+        {
+            marginTop: 10,
+            fontWeight: 'bold',
+            color: 'white',
+            fontSize: 30,
+            textAlign: 'center',
+        },
+    numberOfSteps:
+        {
+            color: 'white',
+            fontSize: 30,
+            textAlign: 'center',
+            marginBottom: 10,
+            fontWeight: 'bold'
+        },
+    stepsBackground:
+        {
+            borderRadius: 30,
+            overflow: 'hidden', 
+            
+        },
+    stepsIcon:
+        {
+            height: 120,
+            width: 150,
+        },
+    weightCard:
+        {
+            //borderRadius: 30,
+            padding: 10,
+            alignItems: 'center', // This ensures vertical centering within the stepsCard
+            justifyContent: 'center',
+            overflow: 'hidden', 
+        },
+    weightTitle:
+        {
+            marginTop: 10,
+            fontWeight: 'bold',
+            color: 'white',
+            fontSize: 20,
+            textAlign: 'center',
+        },
+    currentWeightValue:
+        {
+            color: 'white',
+            fontSize: 20,
+            textAlign: 'center',
+            marginBottom: 10,
+        },
+    weightIcon:
+        {
+            height: 120,
+            width: 150,
+        },
+    weightBackground:
+        {
+            borderRadius: 30,
+            overflow: 'hidden', 
+            
+        },
+    healthMetricsContainer2: 
+        {
+            flexDirection: 'row',
+            justifyContent: 'center',
+            marginTop: 2,
+            alignItems: 'center',
+
+            
+        },
+    heartRateCard:
+        {
+            //borderRadius: 30,
+            padding: 10,
+            alignItems: 'center', // This ensures vertical centering within the stepsCard
+            justifyContent: 'center',
+            overflow: 'hidden', 
+        },
+    heartRateTitle:
+        {
+            marginTop: 10,
+            fontWeight: 'bold',
+            color: 'white',
+            fontSize: 20,
+            textAlign: 'center',
+        },
+    heartRateValue:
+        {
+            color: 'white',
+            fontSize: 20,
+            textAlign: 'center',
+            marginBottom: 10,
+        },
+    heartRateIcon:
+        {
+            height: 120,
+            width: 150,
+        },
+    heartRateBackground:
+        {
+            borderRadius: 30,
+            overflow: 'hidden', 
+            
+        },
+    blog:
+        {
+            fontWeight: 'bold',
+            fontSize: 30,
+            textAlign: 'left',
+            marginLeft: 80,
+            marginTop: 40,
+            marginBottom: 20
+        },
+    carouselArea: 
+        {
+            flex: 1,
+            flexDirection: 'row', // Lay out the cards in a row
+
+        },
+    carouselCard: 
+        {
+            flexDirection: 'row', // Lay out the children (image and text container) in a row
             backgroundColor: '#FFF',
             borderRadius: 10,
+            width: width - 40, // Adjust the width as necessary
+            margin: 20,
             padding: 10,
-            alignItems: 'center',
-            // Add more styling as needed
+            alignItems: 'center', // Center items vertically within the card
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
           },
-    metricTitle: 
+    carouselImage: 
         {
-            // Styling for the metric title
+            width: 150, // Adjust width as necessary
+            height: 200, // Adjust height as necessary, maintaining aspect ratio
+            resizeMode: 'cover',
+            borderRadius: 8, // Optional: if you want rounded corners for the images
+            marginRight: 10, // Space between the image and the text
+            resizeMode: 'cover'
+          },
+    textContainer: 
+          {
+            flex: 1, // Take up the remaining space
+            alignItems: 'flex-start', // Align text to the start (left) side
+          },
+    carouselTitle: 
+        {
+            color: '#000', // Text color
+            fontWeight: 'bold', // Bold font weight
+            marginTop: 10, // Margin top for spacing
         },
-    metricValue: 
+    carouselSubtitle: 
         {
-            // Styling for the metric value
+            color: '#667', // Subtitle text color
+            marginTop: 5, // Margin top for spacing
         },
-    metricStatus: 
-        {
-            // Styling for the metric status
-        },  
+
+            
     });
   
 

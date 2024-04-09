@@ -48,7 +48,7 @@ export const AnswersProvider = ({ children }) =>
                        const userId = await AsyncStorage.getItem('userId');
 
                         // Use Axios to post the data, including userId if required
-                        const response = await axios.post('http://localhost:3000/submitAnswers', {userId, answers});
+                        const response = await axios.post('http://172.25.74.19:3000/submitAnswers', {userId, answers});
                         return response.data.success;
 
                         // Handle successful submission here
