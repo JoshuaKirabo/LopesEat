@@ -29,7 +29,7 @@ const Question1 = ({ navigation }) =>
         {
           try {
             const userId = await AsyncStorage.getItem('userId');
-            const response = await axios.get(`http://localhost:3000/getUserGender/${userId}`);
+            const response = await axios.get(`http://172.25.74.19:3000/getUserGender/${userId}`);
             const gender = response.data.gender; // Assuming the endpoint returns { gender: 'Male' } or { gender: 'Female' }
             setGender(gender);
         

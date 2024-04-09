@@ -42,7 +42,7 @@ const ProfileScreen = () => {
                 //console.log(userId);
                 
     
-                const response = await axios.get(`http://localhost:3000/profile/${userId}`);
+                const response = await axios.get(`http://172.25.74.19:3000/profile/${userId}`);
                 if (response.status !== 200) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 // Set user data state
@@ -70,7 +70,7 @@ const ProfileScreen = () => {
                 const userId = await AsyncStorage.getItem('userId');
 
                 // Call the logout endpoint
-                await axios.post('http://localhost:3000/logout', { userId });
+                await axios.post('http://172.25.74.19:3000/logout', { userId });
 
                 // Remove the user's session data from storage
                 await AsyncStorage.removeItem('userId'); 
