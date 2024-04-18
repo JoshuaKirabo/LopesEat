@@ -17,6 +17,21 @@ const homeScreenModel = {
                 throw new Error('User not found');
             }
     },
+
+    getUserWeight: async function(userId) {
+        const query = `
+          SELECT weight_in_lbs 
+          FROM answers_to_questions 
+          WHERE user_id = $1;
+        `;
+        const { rows } = await pool.query(query, [userId]);
+    
+        if (rows.length > 0) {
+          return rows[0].weight_in_lbs; // Return the user's weight
+        } else {
+          throw new Error('User not found');
+        }
+      },
 };
 
 module.exports = homeScreenModel;

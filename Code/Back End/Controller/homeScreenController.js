@@ -13,6 +13,19 @@ const homeScreenController = {
       res.status(500).send('Failed to get meal count');
     }
   },
+
+  getUserWeight: async function(req, res) {
+    try {
+      const { userId } = req.params;
+      const weight = await homeScreenModel.getUserWeight(userId);
+      res.json({ weight_in_lbs: weight });
+    } catch (error) {
+      console.error('Failed to get user weight:', error);
+      res.status(500).send('Failed to get user weight');
+    }
+  }
+
+
 };
 
 module.exports = homeScreenController;
